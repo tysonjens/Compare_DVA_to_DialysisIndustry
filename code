@@ -1,0 +1,49 @@
+
+##Visit https://data.medicare.gov/Dialysis-Facility-Compare/Dialysis-Facility-Compare-Listing-by-Facility/23ew-n7w9 
+##export data to CSV into your working directory
+
+
+## read file as object compare
+compare <- read.csv("DFC_SOCRATA_FAC_DATA.csv", header = TRUE)
+
+## create a new column that has 1 for DVA and 0 of rest of industry
+compare$DavitaYN <- ifelse(compare$Chain.Organization == "DAVITA", 1, 0)
+
+##Subset of compare that only includes clinics with enough data to measure readmissions, hospitalization,
+## infection rates, and mortality rates
+comparereadmissions <- subset(compare, Patient.Hospital.Readmission.data.availability.Code < 10)
+comparehosp <- subset(compare, Patient.Hospitalization.data.availability.Code < 10)
+compareinfe <- subset(compare, Patient.Infection.Data.Availability.Code < 10)
+comparemort <- subset(compare, Patient.Survival.data.availability.code < 10)
+
+##Subset the 4 objects above into 8 objects, one for DVA and another for rest of industry
+comparereadDVA <- subset(comparereadmissions, DavitaYN == 1)
+comparereadother <- subset(comparereadmissions, DavitaYN == 0)
+comparehospDVA <- subset(comparehosp, DavitaYN == 1)
+comparehospother <- subset(comparehosp, DavitaYN == 0)
+compareSIRDVA <- subset(compareinfe, DavitaYN == 1)
+compareSIRother <- subset(compareinfe, DavitaYN == 0)
+comparemortDVA <- subset(comparemort, DavitaYN == 1)
+comparemortother <- subset(comparemort, DavitaYN == 0)
+
+##Run two sample t-tests with HO: DVA - REST OF INDUSTRY = 0, HA: DVA - REST OF INDUSTRY > 0 
+t.test(comparereadDVA$Readmission.Rate..Facility., comparereadother$Readmission.Rate..Facility., alternative = "g", var.equal = TRUE)
+t.test(comparehospDVA$Hospitalization.Rate..Facility., comparehospother$Hospitalization.Rate..Facility., alternative = "g", var.equal = TRUE)
+t.test(compareSIRDVA$Standard.Infection.Ratio, compareSIRother$Standard.Infection.Ratio, alternative = "g", var.equal = TRUE)
+t.test(comparemortDVA$Mortality.Rate..Facility., comparemortother$Mortality.Rate..Facility., alternative = "g", var.equal = TRUE)
+
+##plots density lines for each metric, rest of industry in black, Davita in blue
+plot(density(comparereadother$Readmission.Rate..Facility.))
+lines(density(comparereadDVA$Readmission.Rate..Facility.), col=("blue"))
+
+plot(density(comparehospother$Hospitalization.Rate..Facility.))
+lines(density(comparehospDVA$Hospitalization.Rate..Facility.), col=("blue"))
+
+plot(density(compareSIRother$Standard.Infection.Ratio))
+lines(density(compareSIRDVA$Standard.Infection.Ratio), col=("blue"))
+
+plot(density(comparemortother$Mortality.Rate..Facility.))
+lines(density(comparemortDVA$Mortality.Rate..Facility.), col=("blue"))
+
+
+
